@@ -1,0 +1,282 @@
+<doctype html>
+
+<head>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.4/jquery-ui.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.4/jquery-ui.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.9.0/vis.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.24.6/js/jquery.tablesorter.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.9.0/vis.min.css">
+
+  <style>
+     div {
+          border: 1px solid black;
+          margin: -1px;
+      }
+
+      div .main {
+        height: 100%;
+        width: 100%;
+        vertical-align: top;
+      }
+
+      div .leftmenu {
+        height: 100%;
+        width: 15%;
+        float: left;
+        display: inline-block;
+        text-overflow: ellipsis;
+        overflow-x: ellipsis;
+      }
+
+      div .leftmenu ul  {
+        list-style-type: none;
+        padding: 0;
+      }
+
+      div .leftmenu a  {
+        text-decoration: none;
+      }
+
+      div .columnfamily {
+        height: 100%;
+        width: 85%;
+        float: left;
+        display: inline-block;
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+
+      th, td {
+        text-align: left;
+      }
+      th, td {
+        border: 1px solid black;
+        padding: 2px 5px 2px 5px;
+      }
+
+      td.description {
+        white-space: pre;
+      }
+
+      div.description {
+        background-color:#DDD;
+        border: 0;
+        margin:1px;
+        padding:10px;
+        white-space: pre;
+      }
+
+  </style>
+
+  <script>
+    $(document).ready(function() { 
+            $("#table_table").tablesorter(); 
+            $("#tabs").tabs();
+        } 
+    ); 
+  </script>
+
+  <title> Cassandra {{keyspace.keyspace_name}}.{{columnfamily.columnfamily_name}} </title>
+</head>
+
+<body>
+  <div class='main'>
+    <h1>Incopro Schema Documentation</h1>
+    <div class='leftmenu'>
+
+        <h3>Keyspaces</h3>
+        <ul>
+            {% for k in schema.schema_keyspaces() %}
+                <li> <a href="/schema/{{k.keyspace_name}}"  title="{{k.description()}}">{{k.keyspace_name}}</a> </li>
+            {% endfor %}
+        </ul>
+
+        {% if keyspace %}
+
+          <h3>Tables in {{keyspace.keyspace_name}}</h3>
+          <ul>
+              {% for cf in keyspace.schema_columnfamilies() %}
+                  <li> <a href="/schema/{{keyspace.keyspace_name}}/{{cf.columnfamily_name}}" title="{{cf.description()}}">{{cf.columnfamily_name}}</a> </li>
+              {% endfor %}
+          </ul>
+        {% endif %}
+    </div>
+    <div class='columnfamily'> 
+      {% if keyspace and columnfamily %}
+
+        <h3>{{keyspace.keyspace_name}}.{{columnfamily.columnfamily_name}}</h3>
+        <div class='description'>{{columnfamily.description()}}</div>'
+
+        <div id="tabs">
+          <ul>
+            <li><a href="#tabs-cols">Columns</a></li>
+            <li><a href="#tabs-alsoin">Also In</a></li>
+            <li><a href="#tabs-params">Parameters</a></li>
+            <li><a href="#tabs-cfhist">cfhistograms</a></li>
+            <li><a href="#tabs-cfstats">cfstats</a></li>
+            <li><a href="#tabs-refs">References</a></li>
+            <li><a href="#tabs-erm">ERM</a></li>
+          </ul>
+          <div id="tabs-cols">
+              <table id="table_table" class="tablesorter">
+                <thead>
+                <tr>
+                  <th>key</th>
+                  <th>name</th>
+                  <th>type</th>
+                  <th>description</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for c in columnfamily.schema_columns() %}
+                  <tr>
+                    <td>{{c.key()}}</td>
+                    <td>{{c.column_name}}</td>
+                    <td>{{c.field_type()}}</td>
+                    <td class="description">{{c.description().strip()}}</td>
+                  </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+          </div>
+
+          <div id="tabs-alsoin">
+              <table>
+                <tr>
+                  <th>key</th>
+                  <th>name</th>
+                  <th>column also in</th>
+                </tr>
+                {% for c in columnfamily.schema_columns() %}
+                  <tr>
+                    <td>{{c.key()}}</td>
+                    <td>{{c.column_name}}</td>
+                    <td>{% for ks,cf in c.also_in() %}
+                            <a href='/schema/{{ks}}/{{cf}}'>{{ks}}.{{cf}}</a>
+                        {% endfor %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </table>
+          </div>
+
+          <div id="tabs-params">
+            <h3> ColumnFamily Parameters </h3>
+            <table>
+              <tr><td>keyspace_name                  </td><td>  {{ columnfamily.keyspace_name               }} </td></td>
+              <tr><td>columnfamily_name              </td><td>  {{ columnfamily.columnfamily_name           }} </td></td>
+              <tr><td>bloom_filter_fp_chance         </td><td>  {{ columnfamily.bloom_filter_fp_chance      }} </td></td>
+              <tr><td>caching                        </td><td>  {{ columnfamily.caching                     }} </td></td>
+              <tr><td>cf_id                          </td><td>  {{ columnfamily.cf_id                       }} </td></td>
+              <tr><td>column_aliases                 </td><td>  {{ columnfamily.column_aliases              }} </td></td>
+              <tr><td>comment                        </td><td>  {{ columnfamily.comment                     }} </td></td>
+              <tr><td>compaction_strategy_class      </td><td>  {{ columnfamily.compaction_strategy_class   }} </td></td>
+              <tr><td>compaction_strategy_options    </td><td>  {{ columnfamily.compaction_strategy_options }} </td></td>
+              <tr><td>comparator                     </td><td>  {{ columnfamily.comparator                  }} </td></td>
+              <tr><td>compression_parameters         </td><td>  {{ columnfamily.compression_parameters      }} </td></td>
+              <tr><td>default_time_to_live           </td><td>  {{ columnfamily.default_time_to_live        }} </td></td>
+              <tr><td>default_validator              </td><td>  {{ columnfamily.default_validator           }} </td></td>
+              <tr><td>dropped_columns                </td><td>  {{ columnfamily.dropped_columns             }} </td></td>
+              <tr><td>gc_grace_seconds               </td><td>  {{ columnfamily.gc_grace_seconds            }} </td></td>
+              <tr><td>index_interval                 </td><td>  {{ columnfamily.index_interval              }} </td></td>
+              <tr><td>is_dense                       </td><td>  {{ columnfamily.is_dense                    }} </td></td>
+              <tr><td>key_aliases                    </td><td>  {{ columnfamily.key_aliases                 }} </td></td>
+              <tr><td>key_validator                  </td><td>  {{ columnfamily.key_validator               }} </td></td>
+              <tr><td>local_read_repair_chance       </td><td>  {{ columnfamily.local_read_repair_chance    }} </td></td>
+              <tr><td>max_compaction_threshold       </td><td>  {{ columnfamily.max_compaction_threshold    }} </td></td>
+              <tr><td>max_index_interval             </td><td>  {{ columnfamily.max_index_interval          }} </td></td>
+              <tr><td>memtable_flush_period_in_ms    </td><td>  {{ columnfamily.memtable_flush_period_in_ms }} </td></td>
+              <tr><td>min_compaction_threshold       </td><td>  {{ columnfamily.min_compaction_threshold    }} </td></td>
+              <tr><td>min_index_interval             </td><td>  {{ columnfamily.min_index_interval          }} </td></td>
+              <tr><td>read_repair_chance             </td><td>  {{ columnfamily.read_repair_chance          }} </td></td>
+              <tr><td>speculative_retry              </td><td>  {{ columnfamily.speculative_retry           }} </td></td>
+              <tr><td>subcomparator                  </td><td>  {{ columnfamily.subcomparator               }} </td></td>
+              <tr><td>type                           </td><td>  {{ columnfamily.type                        }} </td></td>
+              <tr><td>value_alias                    </td><td>  {{ columnfamily.value_alias                 }} </td></td>
+            </table>
+          </div>
+
+          <div id="tabs-cfhist">
+            <h3>cfhistograms</h3>
+            <pre>{{ columnfamily.cfhistograms() }}</pre>
+          </div>
+
+          <div id="tabs-cfstats">
+            <h3>cfstats</h3>
+            <pre>{{ columnfamily.cfstats() }}</pre>
+          </div>
+
+          <div id="tabs-refs">
+            <h3>References</h3>
+              Foreign Keys are estimated based on available column names and partition key column name of the referenced table
+              <h4>References</h4>
+              <ul>
+                {% for ref in schema.get_table(keyspace.keyspace_name, columnfamily.columnfamily_name).references %}
+                  <li> <a href="/schema/{{ref[0]}}/{{ref[1]}}">{{ref[0]}}.{{ref[1]}}</a> </li>
+                {% endfor %}
+              </ul>
+
+              <h4>Referenced By</h4>
+              <ul>
+                {% for ref in schema.get_table(keyspace.keyspace_name, columnfamily.columnfamily_name).referenced_by %}
+                  <li> <a href="/schema/{{ref[0]}}/{{ref[1]}}">{{ref[0]}}.{{ref[1]}}</a> </li>
+                {% endfor %}
+              </ul>
+
+              <h4>One-to-One</h4>
+              <ul>
+                {% for ref in schema.get_table(keyspace.keyspace_name, columnfamily.columnfamily_name).one_to_one %}
+                  <li> <a href="/schema/{{ref[0]}}/{{ref[1]}}">{{ref[0]}}.{{ref[1]}}</a> </li>
+                {% endfor %}
+              </ul>
+
+              <h4>Multi-valued Attributes</h4>
+              <ul>
+                {% for att in schema.get_table(keyspace.keyspace_name, columnfamily.columnfamily_name).multi_valued_atts %}
+                  <li> {{att}} </li>
+                {% endfor %}
+              </ul>
+          </div>
+
+          <div id="tabs-erm">
+            <h3>Entity Relationship Model</h3>
+            <div id="erm_graph"></div>
+                <script type="text/javascript">
+                  var erm = new vis.Network(
+                      document.getElementById('erm_graph'),
+                      { nodes: new vis.DataSet( {{ schema.nodes(keyspace.keyspace_name, columnfamily.columnfamily_name) |tojson|safe }} ),
+                        edges: new vis.DataSet( {{ schema.edges(keyspace.keyspace_name, columnfamily.columnfamily_name) |tojson|safe }} )
+                      },
+                      { nodes: { 'shape': 'box' } ,
+                        edges: { 'arrows': 'to' }
+                      }
+                  );
+                </script>
+            </div>
+          </div>
+
+
+      {% else %}
+            <h3>{{keyspace.keyspace_name}} Entity Relationship Model</h3>
+            <div id="erm_graph"></div>
+                <script type="text/javascript">
+                  var erm = new vis.Network(
+                      document.getElementById('erm_graph'),
+                      { nodes: new vis.DataSet( {{ schema.nodes(keyspace.keyspace_name) |tojson|safe }} ),
+                        edges: new vis.DataSet( {{ schema.edges(keyspace.keyspace_name) |tojson|safe }} )
+                      },
+                      { nodes: { 'shape': 'box' } ,
+                        edges: { 'arrows': 'to' }
+                      }
+                  );
+                </script>
+            </div>
+      {% endif %}
+    </div>
+  </div>
+</body>
+
