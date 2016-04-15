@@ -1,0 +1,32 @@
+#!/home/davec/schema/venv/bin/python
+
+import classes
+import schema
+from flask import Flask, render_template
+
+app = Flask(__name__)
+c = classes.Classes()
+schema = schema.Schema()
+
+
+@app.route('/classes')
+def show_classes():
+    return "\n".join(['<html><body><pre>'] + c.show() + ["</pre></body></html>"])
+
+
+@app.route('/schema')
+@app.route('/schema/<keyspace_name>')
+@app.route('/schema/<keyspace_name>/<columnfamily_name>')
+def render_schema(keyspace_name='collect',columnfamily_name=None):
+    if keyspace_name:
+        schema_keyspace = schema.schema_keyspace(keyspace_name)
+    else:
+        schema_keyspace = None
+    if columnfamily_name:
+        schema_columnfamily = schema_keyspace.schema_columnfamily(columnfamily_name)[0]
+    else:
+        schema_columnfamily = None
+    return render_template('schema.html', schema=schema, keyspace=schema_keyspace, columnfamily=schema_columnfamily)
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0',port=5000,debug=True)
