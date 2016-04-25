@@ -1,6 +1,6 @@
 #!/home/davec/envs/datamodel/bin/python
 
-# from django.conf import settings
+from __future__ import unicode_literals
 from cassandra import cqlengine
 from cassandra.cqlengine import columns
 from cassandra.auth import PlainTextAuthProvider
@@ -82,14 +82,12 @@ class SchemaColumnfamilies(Model):
         return sorted(SchemaColumns.objects.filter(keyspace_name=self.keyspace_name,columnfamily_name=self.columnfamily_name))
 
     def cfhistograms(self):
-        return subprocess.Popen(['nodetool', '--username', 'development', '--password', 'xxxx',
-                                'cfhistograms', self.keyspace_name, self.columnfamily_name],
-                                stdout=subprocess.PIPE).communicate()[0]
+            return subprocess.Popen(['docker','exec','-t','cassandra_davec','nodetool','--username','development','--password','xxx','cfhistograms',self.keyspace_name,self.columnfamily_name],
+                                    stdout=subprocess.PIPE).communicate()[0]
 
     def cfstats(self):
-        return subprocess.Popen(['nodetool', '--username', 'development', '--password', 'xxxx',
-                                'cfstats', self.keyspace_name+'.'+self.columnfamily_name, '-H'],
-                                stdout=subprocess.PIPE).communicate()[0]
+            return subprocess.Popen(['docker','exec','-t','cassandra_davec','nodetool','--username','development','--password','xxx','cfstats',self.keyspace_name+'.'+self.columnfamily_name,'-H'],
+                                    stdout=subprocess.PIPE).communicate()[0]
 
 schema_column_cache = None
 
@@ -210,7 +208,7 @@ class Schema(object):
     full_schema = None
 
     def __init__(self):
-        cqlengine.connection.setup(['localhost'],'system', auth_provider=PlainTextAuthProvider(username='development',password='xxxx'))
+        cqlengine.connection.setup(['cassandra_davec.weave.local'],'system', auth_provider=PlainTextAuthProvider(username='development',password='xxx'))
         self.make_full_schema()
 
     def schema_keyspaces(self):
@@ -272,5 +270,5 @@ class Schema(object):
             return self.all_edges
 
 if __name__ == '__main__':
-    cqlengine.connection.setup(['localhost'],'system', auth_provider=PlainTextAuthProvider(username='development',password='xxxx'))
+    cqlengine.connection.setup(['cassandra_davec.weave.local'],'system', auth_provider=PlainTextAuthProvider(username='development',password='xxx'))
     s = Schema()
